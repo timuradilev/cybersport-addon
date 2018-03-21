@@ -1,3 +1,39 @@
+init();
+
+function init()
+{
+  var target = document.getElementsByClassName("comments__list");
+ 
+  // создаем экземпляр наблюдателя
+  var observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        console.log(mutation);
+    });    
+  });
+ 
+  // настраиваем наблюдатель
+  var config = {subtree: true, attributes: true};
+ 
+  // передаем элемент и настройки в наблюдатель
+  observer.observe(target[0], config);
+ 
+  // позже можно остановить наблюдение
+  //observer.disconnect();
+  
+  //$('.comments__list').one('DOMNodeInserted', '.comment', highlightUsersComments); //Call handler when first comment is added in comments list
+  //$('.comments__count').on('DOMSubtreeModified', function() {
+  //$('.comments__list').on('DOMNodeInserted', '.comments__item', function(event) {
+  //  console.log(event.currentTarget);
+  //}); //Call handler when first comment is added in comments list
+
+  //$(document).ready(highlightUsersComments); //Call handler when a page has loaded
+
+  //var parsedUrl = parseUrl();
+  //if("none" != parsedUrl.type) // if current page is news/blog/match/tournament...
+  //    $('.comments__list').one('DOMNodeInserted', '.comment', { "key": parsedUrl.key }, highlightNewComments); //Call handler when first comment is added in comments list
+
+}
+
 function highlightUsersComments()
 {
   //find out username
@@ -16,6 +52,8 @@ function highlightUsersComments()
     $(comment).attr('style','background-color: #fff8dd');
   });
 
+  //track user's attempt to post new comment
+  //$('.comments__list').one('DOMNodeInserted', 'li', highlightUsersComments);
   //comments.each(function(index) {
   //  console.log($(this));
   //  $(this).attr('style','background-color: #fff8dd');
@@ -80,47 +118,65 @@ function parseUrl()
   return page;
 }
 
-function checkUserFirstTimeVisitedPage()
+function checkUserFirstTimeVisitPage()
 {
-  var parsedUrl = parseUrl();
-  if("none" == parsedUrl.type)
-    return;
+  
   //alert(parsedUrl.type);
   //if(parsedUrl.type != "none")
   //  alert(parsedUrl.key);
 
-  if(null != localStorage.getItem(parsedUrl.key)) { //if user has already visited this page
-    var lastVisitDate = convertStringToDate(localStorage.getItem(parsedUrl.key));
-    $('.comments__list').one('DOMNodeInserted', '.comment', lastVisitDate, highlightNewComments); //Call handler when first comment is added in comments list
-    //$(document).ready(highlightNewComments);
-  }
-  localStorage.setItem(parsedUrl.key, convertDateToString(new Date(Date.now()))); //set/update new visit date
+  //if(null == localStorage.getItem(parsedUrl.key)) { // if it is the first visit of this page
+  //  return;
+  //}
+  //if(null != localStorage.getItem(parsedUrl.key)) { //if user has already visited this page
+  //  var lastVisitDate = convertStringToDate(localStorage.getItem(parsedUrl.key));
+  //  //$(document).ready(highlightNewComments);
+  //}
+  //localStorage.setItem(parsedUrl.key, convertDateToString(new Date(Date.now()))); //set/update new visit date
 }
 
-function highlightNewComments(eventData)
+function highlightNewComments(event)
 {
-  var lastVisitDate = eventData.data;
-  var notMyComments = $(".comment.comment--not-my");
-  
-  notMyComments.each(function (index) {
-    //extract the comment's date
-    var dateElem = $(this).find(".date");
-    var dateStr = $(dateElem).text();
-    var date = convertStringToDate(dateStr);
+  var notUsersComments = $(".comment.comment--not-my");
+  var usersComments = $(".comment").not(".comment--not-my").not(".form__comment");
+  var totalNumberOfComments = notUsersComments.length + usersComments.length;
+
+  var locStorValue = localStorage.getItem(event.data.key);
+  if(null != locStorValue) {
+    var arr = locStorValue.split(":"); // id:number
+    var oldMaxCommentId = arr[0];
+    var oldNumberOfComments = arr[1];
     
-    if(lastVisitDate <= date) {
-      var comment__inner = $(this).find(".comment__inner");
-      //console.log(comment__inner);
-      $(comment__inner).attr('style', 'background-color: rgb(222,222,222)');
+    showNumberOfNewComments(totalNumberOfComments - oldNumberOfComments);
+  }
+  
+  var maxCommentId = 0;
+  notUsersComments.each(function() {
+    var commentId = $(this).attr("data-id");
+    if(commentId > maxCommentId)
+      maxCommentId = commentId;
+    
+    if(null != locStorValue) { // if it is not the first time user visit current page
+      if($(this).attr("data-id") > oldMaxCommentId)
+        $(this).find(".comment__inner").attr('style', 'background-color: rgb(222,222,222)');
     }
   });
+  
+  localStorage.setItem(event.data.key, maxCommentId + ":" + totalNumberOfComments); // set/update new id:number
+  
+  //track user's attempt to post new comment
+  //$('.comments__list').one('DOMNodeInserted', 'li', { "key": event.data.key }, function(event){
+  //  var totalNumberOfComments = $(".comment").not(".form__comment").length;
+  //  var arr = localStorage.getItem(event.data.key).split("/");
+  //  localStorage.setItem(event.data.key, arr[0] + "/" + totalNumberOfComments);
+  //});
 }
 
-//Call handler when first comment is added in comments list
-$('.comments__list').one('DOMNodeInserted', '.comment', highlightUsersComments);
-//$('.comments__count').on('DOMSubtreeModified', function() {
-
-//Call handler when a page has loaded
-$(document).ready(highlightUsersComments);
-
-checkUserFirstTimeVisitedPage();
+function showNumberOfNewComments(number)
+{
+  //var currentNumberOfComments = $(".comments__count").text();
+  //var numberOfNewComments = currentNumberOfComments - oldNumberOfComments;
+  
+  var commentsCountElem = $(".comments__header").find("h3").html();
+  $(".comments__header").find("h3").html(commentsCountElem + "<span style='color:#6c9007'> +" + number +"</span>");
+}

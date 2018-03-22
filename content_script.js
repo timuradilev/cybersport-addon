@@ -1,25 +1,104 @@
 init();
 
+//comments__count is class for <span class="comments__count">count</span>
+
 function init()
 {
-  var target = document.getElementsByClassName("comments__list");
- 
-  // создаем экземпляр наблюдателя
-  var observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        console.log(mutation);
-    });    
-  });
- 
-  // настраиваем наблюдатель
-  var config = {subtree: true, attributes: true};
- 
-  // передаем элемент и настройки в наблюдатель
-  observer.observe(target[0], config);
- 
-  // позже можно остановить наблюдение
-  //observer.disconnect();
+  var parsedUrl = parseUrl();
   
+  //tracking changes in 'comments__count'
+  var config = { childList: true };
+  var callback = function(mutationsList) {
+    for(var mutation of mutationsList) {
+      console.log(mutation);
+      if (mutation.addedNodes.length != 0) {
+        //rewrite comments count in localStorage to value from 'comments__count'
+        console.log("changed");
+        var maxCommentId  = localStorage.getItem(parsedUrl.key).split(":")[0];
+        localStorage.setItem(parsedUrl.key, maxCommentId + ":" + mutation.addedNodes[0].data);
+      }
+    }
+  };
+  var observer = new MutationObserver(callback);
+  
+  //get user's name
+  var userName = document.getElementsByClassName("header__login")[0].children[3].children[0].children[0].innerText;
+  
+  //get data from localStorage about last visit
+  var locStorValue = localStorage.getItem(parsedUrl.key);
+  if(null != locStorValue) { // if user has already visited this page
+    var arr = locStorValue.split(":"); // id:count
+    var oldMaxCommentId = arr[0];
+    var oldCommentsCount = arr[1];
+    var newMaxCommentId = oldMaxCommentId;
+  } else { // it is first time user visit the page
+    var oldMaxCommentId = 0;
+    var newMaxCommentId = 0;
+  }
+  
+  var currentCommentCountElem = $(".comments__count")[0];
+  
+  var callOnceMutationObserverObserve = (function() {
+    var executed = false;
+    return function() {
+      if (!executed) {
+        executed = true;
+        var targetNode = document.getElementsByClassName('comments__count').item(0);
+        observer.observe(targetNode, config);
+      }
+    };
+  })();
+  
+  var callOnceShowNewCommentsCount = (function() {
+    var executed = locStorValue == null; //if it is first visit to this page, set true and never execute!
+    var commentsCount = locStorValue != null ? oldCommentsCount : null;
+    return function() {
+      if (!executed) {
+        executed = true;
+        var newCommentsCount = $(".comments__count")[0].innerText - commentsCount;
+        showNewCommentsCount(newCommentsCount >= 0 ? newCommentsCount : 0);
+      }
+    };
+  })();
+  
+  //track every new comments that is loaded into document by site's js
+  $.initialize(".comment", function() {
+    if(this.className != "form__comment comment") { //exclude the form for posting new comment
+      //show number of new comments only once in first call of this anonymous function
+      callOnceShowNewCommentsCount();
+      //at this point of time '.comments__count' is set from 0 to actual number of comments by site's js
+      //and all comments are loaded. '.comments__count' is changed if user post new comment or delete old one.
+      //next function tracks this type of actions
+      callOnceMutationObserverObserve();
+      debug();
+      
+      //if the comments count changed from last visit(
+      
+      //highlighting user's comment
+      if($(this).attr('data-user-name') === userName) {
+        $(this).attr('style','background-color: #fff8dd');
+        return;
+      }
+      
+      //highlighting new comment
+      if("none" != parsedUrl.type) {
+        var commentId = $(this).attr("data-id");
+        if(commentId > oldMaxCommentId) {
+          if(null != locStorValue)
+            $(this).find(".comment__inner").attr('style', 'background-color: rgb(222,222,222)');
+          if(commentId > newMaxCommentId) {
+            newMaxCommentId = commentId;
+            localStorage.setItem(parsedUrl.key, newMaxCommentId + ":" + currentCommentCountElem.innerText);
+          }
+        }
+      }
+    }
+  });
+}
+  //setInterval(highlightUsersComments, 100);
+  //$(".comments__list").on("DOMNodeRemoved", "article", function(event) { console.log($(event.currentTarget));} );
+  //var count = 0; $("article").livequery(function(){ alert("sssd"); });
+  //var count = 0; $(".comments__list").on('DOMNodeInsertedIntoDocument', "article", function() { console.log(++count); } );
   //$('.comments__list').one('DOMNodeInserted', '.comment', highlightUsersComments); //Call handler when first comment is added in comments list
   //$('.comments__count').on('DOMSubtreeModified', function() {
   //$('.comments__list').on('DOMNodeInserted', '.comments__item', function(event) {
@@ -32,6 +111,16 @@ function init()
   //if("none" != parsedUrl.type) // if current page is news/blog/match/tournament...
   //    $('.comments__list').one('DOMNodeInserted', '.comment', { "key": parsedUrl.key }, highlightNewComments); //Call handler when first comment is added in comments list
 
+function debug(parsedUrl)
+{
+  var maxId = 0;
+  var comments = $(".comment").not(".form__comment");
+  comments.each(function() {
+    if($(this).attr("data-id") > maxId)
+      maxId = $(this).attr("data-id");
+  });
+  
+  console.log("maxId = " + maxId);
 }
 
 function highlightUsersComments()
@@ -172,7 +261,7 @@ function highlightNewComments(event)
   //});
 }
 
-function showNumberOfNewComments(number)
+function showNewCommentsCount(number)
 {
   //var currentNumberOfComments = $(".comments__count").text();
   //var numberOfNewComments = currentNumberOfComments - oldNumberOfComments;

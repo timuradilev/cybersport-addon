@@ -19,7 +19,7 @@
     {
       "matches": ["https://www.cybersport.ru/*"],
       "exclude_matches": ["https://www.cybersport.ru/users/*"],
-      "js": ["jquery-3.3.1.min.js", "content_script.js"]
+      "js": ["jquery-3.3.1.min.js", "jquery.initialize.min.js", "content_script.js"]
     }
   ],
   "icons": {

@@ -72,7 +72,6 @@ function init()
       callOnceMutationObserverObserve();
       debug();
       
-      //if the comments count changed from last visit(
       
       //highlighting user's comment
       if($(this).attr('data-user-name') === userName) {
@@ -92,6 +91,10 @@ function init()
           }
         }
       }
+      
+      //if user is 'verified'
+      if($(this).find('.icon-verification').length)
+        $(this).find(".comment__inner").attr('style','background-color: #e7f3ff');
     }
   });
 }

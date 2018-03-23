@@ -1,5 +1,20 @@
-highlightComments();
-showNewCommentsCounterOnMainPage();
+init();
+
+function init()
+{
+  keepLocalStorageFromOverflowing();
+  if(window.location.pathname == "/") //if it is main page
+    showNewCommentsCounterOnMainPage();
+  else
+    highlightComments();
+}
+
+function addKeys(start, end)
+{
+  for(var i = start; i <= end; ++i) {
+    localStorage.setItem("news/vega-squadron-pokinula-sl-imbatv-invitational-chongqing-2018" + i, "1000" + i  + ":1000");
+  }
+}
 
 function showNewCommentsCounterOnMainPage()
 {
@@ -18,14 +33,16 @@ function showNewCommentsCounterOnMainPage()
     });
   });
   */
-  $.initialize(".comment-counter", function() {
-    var parsedUrl = parseUrlPathname(this.parentElement.pathname);
-    var locStorValue = localStorage.getItem(parsedUrl.key);
-    if(null != locStorValue) {
-      var oldCommentsCount = locStorValue.split(":")[1]; // id:count
-      var commentsCount = this.children[2].innerText; // span(.comment-counter) > childs[2] > span(.comment-counter__count)
-      $(this).after("<span style='color: #6c9007'>+" + (commentsCount > oldCommentsCount ? commentsCount - oldCommentsCount : "0") + "</span>");
-    }
+  $(document).ready(function() {
+    $.initialize(".comment-counter", function() {
+      var parsedUrl = parseUrlPathname(this.parentElement.pathname);
+      var locStorValue = localStorage.getItem(parsedUrl.key);
+      if(null != locStorValue) {
+        var oldCommentsCount = locStorValue.split(":")[1]; // id:count
+        var commentsCount = this.children[2].innerText; // span(.comment-counter) > childs[2] > span(.comment-counter__count)
+        $(this).after("<span style='color: #6c9007'>+" + (commentsCount > oldCommentsCount ? commentsCount - oldCommentsCount : "0") + "</span>");
+      }
+    });
   });
   //comment-counter__count
   // comment-counter
@@ -41,13 +58,19 @@ function highlightComments()
   //tracking changes in 'comments__count'
   var config = { childList: true };
   var callback = function(mutationsList) {
+    var removedCounter = null;
     for(var mutation of mutationsList) {
-      console.log(mutation);
-      if (mutation.addedNodes.length != 0) {
-        //rewrite comments count in localStorage to value from 'comments__count'
-        console.log("changed");
-        var maxCommentId  = localStorage.getItem(parsedUrl.key).split(":")[0];
-        localStorage.setItem(parsedUrl.key, maxCommentId + ":" + mutation.addedNodes[0].data);
+      if(mutation.removedNodes.length != 0) // if 'comments__count' removed from DOM
+        removedCounter = mutation.removedNodes[0].data;
+      if (mutation.addedNodes.length != 0) {// if 'comments__count' added to DOM
+        //if user posts comment, add 1 to commentsCount, if removes comment, take 1 from commentsCount
+        if(null != removedCounter) {
+          var arrInfo = localStorage.getItem(parsedUrl.key).split(":");
+          var maxCommentId  = arrInfo[0];
+          var commentsCoundDiff = mutation.addedNodes[0].data - removedCounter; // has to be 1 or -1.
+          var newCommentsCount = parseInt(arrInfo[1]) + parseInt(commentsCoundDiff); //arrInfo[1] + commentsCoundDiff returns string, not int
+          localStorage.setItem(parsedUrl.key, maxCommentId + ":" + newCommentsCount);
+        }
       }
     }
   };
@@ -146,6 +169,34 @@ function highlightComments()
   //if("none" != parsedUrl.type) // if current page is news/blog/match/tournament...
   //    $('.comments__list').one('DOMNodeInserted', '.comment', { "key": parsedUrl.key }, highlightNewComments); //Call handler when first comment is added in comments list
 
+//
+function keepLocalStorageFromOverflowing()
+{
+  if(localStorage.length > 5000) {
+    //get all our key:value from localStorage
+    var data = []; // key:commentId
+    for(var i = 0; i < localStorage.length; ++i) {
+      var key = localStorage.key(i);
+      if(key.length > 3) { // length is enough to contain "news", "blog", "match", "reports"
+        var arr = key.split("/");
+        if(arr.length == 2 && (arr[0] === "news" || arr[0] === "match" || arr[0] === "blog" || arr[0] === "reports")) {
+          data.push({ "key": key, "value": localStorage.getItem(key).split(":")[0] }); //commentId
+        }          
+      }
+    }
+    //sort keys and deleted oldest by comparing commentId with each other
+    data.sort(function(a,b) { 
+      if(a.value < b.value)
+        return -1;
+      if(a.value > b.value)
+        return 1;
+      return 0;
+    });
+    var commentsCountToDelete = 2000;
+    for(var i = 0; i < commentsCountToDelete && i < data.length; ++i)
+      localStorage.removeItem(data[i].key);
+  }
+}
 function debug(parsedUrl)
 {
   var maxId = 0;
@@ -156,58 +207,6 @@ function debug(parsedUrl)
   });
   
   console.log("maxId = " + maxId);
-}
-
-function highlightUsersComments()
-{
-  //find out username
-  var userName = document.getElementsByClassName("header__login")[0].children[3].children[0].children[0].innerText;
-  //search for comments
-  var comments = $(".comment");
-  var myComments = [];
-  
-  for(var commentNumber in comments) {
-    if(Number.isInteger(parseInt(commentNumber)))
-     if('className' in comments[commentNumber].__proto__ && $(comments[commentNumber]).attr('data-user-name') === userName)
-        myComments.push(comments[commentNumber]);
-  }
-  //set background color for the comments
-  myComments.forEach(function(comment){
-    $(comment).attr('style','background-color: #fff8dd');
-  });
-
-  //track user's attempt to post new comment
-  //$('.comments__list').one('DOMNodeInserted', 'li', highlightUsersComments);
-  //comments.each(function(index) {
-  //  console.log($(this));
-  //  $(this).attr('style','background-color: #fff8dd');
-  //});
-}
-
-//return date as string with specific format(dd.mm.yyyy, hh:mm)
-function convertDateToString(date)
-{
-  var result = "";
-  var day = date.getDate();
-  result += day < 10 ? "0" + day : day;
-  var month = date.getMonth() + 1;
-  result += "." + (month < 10 ? "0" + month : month);
-  result += "." + date.getFullYear();
-  result += ", ";
-  var hours = date.getHours();
-  result += hours < 10 ? "0" + hours : hours;
-  var minutes = date.getMinutes();
-  result += ":" + (minutes < 10 ? "0" + minutes : minutes);
-  return result;
-}
-
-function convertStringToDate(str)
-{
-  //dd.mm.yyyy, hh:mm or dd.mm.yyyy, h:mm or dd.mm.yyyy, h:m
-  var date = new Date(str.substr(6,4), parseInt(str.substr(3,2)) - 1, str.substr(0,2));
-  var arr = str.substr(12).match(/(\d{1,2}):(\d{1,2})/);
-  date.setHours(arr[1], arr[2]);
-  return date;
 }
 
 //get type of page and key to set in localStorage or get from localStorage
@@ -242,65 +241,13 @@ function parseUrlPathname(url)
   return page;
 }
 
-function checkUserFirstTimeVisitPage()
-{
-  
-  //alert(parsedUrl.type);
-  //if(parsedUrl.type != "none")
-  //  alert(parsedUrl.key);
 
-  //if(null == localStorage.getItem(parsedUrl.key)) { // if it is the first visit of this page
-  //  return;
-  //}
-  //if(null != localStorage.getItem(parsedUrl.key)) { //if user has already visited this page
-  //  var lastVisitDate = convertStringToDate(localStorage.getItem(parsedUrl.key));
-  //  //$(document).ready(highlightNewComments);
-  //}
-  //localStorage.setItem(parsedUrl.key, convertDateToString(new Date(Date.now()))); //set/update new visit date
-}
-
-function highlightNewComments(event)
-{
-  var notUsersComments = $(".comment.comment--not-my");
-  var usersComments = $(".comment").not(".comment--not-my").not(".form__comment");
-  var totalNumberOfComments = notUsersComments.length + usersComments.length;
-
-  var locStorValue = localStorage.getItem(event.data.key);
-  if(null != locStorValue) {
-    var arr = locStorValue.split(":"); // id:number
-    var oldMaxCommentId = arr[0];
-    var oldNumberOfComments = arr[1];
-    
-    showNumberOfNewComments(totalNumberOfComments - oldNumberOfComments);
-  }
-  
-  var maxCommentId = 0;
-  notUsersComments.each(function() {
-    var commentId = $(this).attr("data-id");
-    if(commentId > maxCommentId)
-      maxCommentId = commentId;
-    
-    if(null != locStorValue) { // if it is not the first time user visit current page
-      if($(this).attr("data-id") > oldMaxCommentId)
-        $(this).find(".comment__inner").attr('style', 'background-color: rgb(222,222,222)');
-    }
-  });
-  
-  localStorage.setItem(event.data.key, maxCommentId + ":" + totalNumberOfComments); // set/update new id:number
-  
-  //track user's attempt to post new comment
-  //$('.comments__list').one('DOMNodeInserted', 'li', { "key": event.data.key }, function(event){
-  //  var totalNumberOfComments = $(".comment").not(".form__comment").length;
-  //  var arr = localStorage.getItem(event.data.key).split("/");
-  //  localStorage.setItem(event.data.key, arr[0] + "/" + totalNumberOfComments);
-  //});
-}
 
 function showNewCommentsCount(number)
 {
   //var currentNumberOfComments = $(".comments__count").text();
   //var numberOfNewComments = currentNumberOfComments - oldNumberOfComments;
   
-  var commentsCountElem = $(".comments__header").find("h3").html();
-  $(".comments__header").find("h3").html(commentsCountElem + "<span style='color:#6c9007'> +" + number +"</span>");
+  var commentsCountElem = $(".comments__header").find("h3");
+  $(commentsCountElem).append("<span style='color:#6c9007'> +" + number +"</span>");
 }

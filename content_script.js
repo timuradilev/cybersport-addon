@@ -1,10 +1,32 @@
-init();
+highlightComments();
+showNewCommentsCounterOnMainPage();
+
+function showNewCommentsCounterOnMainPage()
+{
+  $(document).ready(function() {
+    $(".comment-counter").after(function(){ // iterate over each topic's comment counter
+      //var topicHref = this.parentElement.href.replace("#comments","");
+      //console.log(this.parentElement.pathname);
+      var parsedUrl = parseUrlPathname(this.parentElement.pathname);
+      var locStorValue = localStorage.getItem(parsedUrl.key);
+      if(null != locStorValue) {
+        var oldCommentsCount = locStorValue.split(":")[1]; // id:count
+        var commentsCount = this.children[2].innerText; // span(.comment-counter) > childs[2] > span(.comment-counter__count)
+        return "<span style='color: #6c9007'>+" + (commentsCount > oldCommentsCount ? commentsCount - oldCommentsCount : "0") + "</span>";
+      }
+      return "";
+    });
+  });
+  //comment-counter__count
+  // comment-counter
+  //$(".comment-counter").after("!");
+}
 
 //comments__count is class for <span class="comments__count">count</span>
 
-function init()
+function highlightComments()
 {
-  var parsedUrl = parseUrl();
+  var parsedUrl = parseUrlPathname(window.location.pathname);
   
   //tracking changes in 'comments__count'
   var config = { childList: true };
@@ -179,9 +201,9 @@ function convertStringToDate(str)
 }
 
 //get type of page and key to set in localStorage or get from localStorage
-function parseUrl()
+function parseUrlPathname(url)
 {
-  var pathnameParts = window.location.pathname.split("/");
+  var pathnameParts = url.split("/");
   //var parsedUrl = window.location.pathname.match(/(\w+)\/([\w-]+)/i); // hostname/*/*/
   var page = { "type": null };
   if(pathnameParts.length < 2)

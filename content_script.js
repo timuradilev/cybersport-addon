@@ -3,7 +3,7 @@ showNewCommentsCounterOnMainPage();
 
 function showNewCommentsCounterOnMainPage()
 {
-  $(document).ready(function() {
+  /*$(document).ready(function() {
     $(".comment-counter").after(function(){ // iterate over each topic's comment counter
       //var topicHref = this.parentElement.href.replace("#comments","");
       //console.log(this.parentElement.pathname);
@@ -17,11 +17,21 @@ function showNewCommentsCounterOnMainPage()
       return "";
     });
   });
+  */
+  $.initialize(".comment-counter", function() {
+    var parsedUrl = parseUrlPathname(this.parentElement.pathname);
+    var locStorValue = localStorage.getItem(parsedUrl.key);
+    if(null != locStorValue) {
+      var oldCommentsCount = locStorValue.split(":")[1]; // id:count
+      var commentsCount = this.children[2].innerText; // span(.comment-counter) > childs[2] > span(.comment-counter__count)
+      $(this).after("<span style='color: #6c9007'>+" + (commentsCount > oldCommentsCount ? commentsCount - oldCommentsCount : "0") + "</span>");
+    }
+  });
   //comment-counter__count
   // comment-counter
   //$(".comment-counter").after("!");
 }
-
+//window.scroll(0, 2000); setTimeout( function(){window.scroll(0, 0);}, 100 );
 //comments__count is class for <span class="comments__count">count</span>
 
 function highlightComments()

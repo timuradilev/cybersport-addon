@@ -104,7 +104,7 @@ function highlightComments()
       
       //highlighting user's comment
       if($(this).attr('data-user-name') === userName) {
-        $(this).attr('style','background-color: #fff8dd');
+        $(this).find(".comment__inner").attr('style','background-color: #fff8dd');
         return;
       }
       

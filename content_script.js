@@ -29,7 +29,7 @@ function highlightComments()
 {
   var parsedUrl = parseUrlPathname(window.location.pathname);
   
-  //tracking changes in 'comments__count'
+  //tracking changes in 'comments__count'. It happens only when user posts or removes comment
   var config = { childList: true };
   var callback = function(mutationsList) {
     var removedCounter = null;
@@ -63,6 +63,7 @@ function highlightComments()
   } else { // it is first time user visit the page
     var oldMaxCommentId = 0;
     var newMaxCommentId = 0;
+    localStorage.setItem(parsedUrl.key, "0:0");
   }
   
   var currentCommentCountElem = $(".comments__count")[0];
@@ -93,18 +94,22 @@ function highlightComments()
   //track every new comments that is loaded into document by site's js
   $.initialize(".comment", function() {
     if(this.className != "form__comment comment") { //exclude the form for posting new comment
-      //show number of new comments only once in first call of this anonymous function
+      //show number of new comments only once in first call of this anonymous function. 
+      //Not possible to call this function earlier because '.comments__count' not set to actual number of comments till this point of time
       callOnceShowNewCommentsCount();
       //at this point of time '.comments__count' is set from 0 to actual number of comments by site's js
       //and all comments are loaded. '.comments__count' is changed if user post new comment or delete old one.
-      //next function tracks this type of actions
+      //next function tracks this user's actions
       callOnceMutationObserverObserve();
-      debug();
+      //debug();
       
       
       //highlighting user's comment
       if($(this).attr('data-user-name') === userName) {
         $(this).find(".comment__inner").attr('style','background-color: #fff8dd');
+        if(0 == oldCommentsCount) // if it is first user's visit or last time there were no comments at all
+          if($(".comment").not(".form__comment").length == 1) // and this is the first comment on this page i.e. user posted this comment now
+            localStorage.setItem(parsedUrl.key, "0:1"); // next time all others comments has to be highlighted as new.
         return;
       }
       
@@ -123,7 +128,7 @@ function highlightComments()
       
       //if user is 'verified'
       if($(this).find('.icon-verification').length)
-        $(this).find(".comment__inner").attr('style','background-color: #e7f3ff');
+        $(this).find(".comment__inner").attr('style','background-color: #f98a8a');
     }
   });
 }

@@ -16,8 +16,8 @@ function showNewCommentsCounterOnMainPage()
       var parsedUrl = parseUrlPathname(this.parentElement.pathname);
       var locStorValue = localStorage.getItem(parsedUrl.key);
       if(null != locStorValue) {
-        var oldCommentsCount = locStorValue.split(":")[1]; // id:count
-        var commentsCount = this.children[2].innerText; // span(.comment-counter) > childs[2] > span(.comment-counter__count)
+        var oldCommentsCount = parseInt(locStorValue.split(":")[1]); // id:count
+        var commentsCount = parseInt(this.children[2].innerText); // span(.comment-counter) > childs[2] > span(.comment-counter__count)
         $(this).after("\n<span style='color: #6c9007'>+" + (commentsCount > oldCommentsCount ? commentsCount - oldCommentsCount : "0") + "</span>");
       }
     });

@@ -28,6 +28,8 @@ function showNewCommentsCounterOnMainPage()
 function highlightComments()
 {
   var parsedUrl = parseUrlPathname(window.location.pathname);
+  if(parsedUrl.type == "none")
+    return;
   
   //tracking changes in 'comments__count'. It happens only when user posts or removes comment
   var config = { childList: true };
@@ -128,14 +130,14 @@ function highlightComments()
       
       //if user is 'verified'
       if($(this).find('.icon-verification').length)
-        $(this).find(".comment__inner").attr('style','background-color: #f98a8a');
+        $(this).find(".comment__inner").attr('style','background-color: #beeaec');
     }
   });
 }
 
 function keepLocalStorageFromOverflowing()
 {
-  if(localStorage.length > 5000) {
+  if(localStorage.length > 3000) {
     //get all our key:value from localStorage
     var data = []; // key:commentId
     for(var i = 0; i < localStorage.length; ++i) {
@@ -155,7 +157,7 @@ function keepLocalStorageFromOverflowing()
         return 1;
       return 0;
     });
-    var commentsCountToDelete = 2000;
+    var commentsCountToDelete = 1500;
     for(var i = 0; i < commentsCountToDelete && i < data.length; ++i)
       localStorage.removeItem(data[i].key);
   }

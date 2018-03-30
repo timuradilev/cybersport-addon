@@ -66,41 +66,44 @@ function highlightComments()
       }
     };
   })();
-  //get user's name
   var userName = document.getElementsByClassName("header__login")[0].children[3].children[0].children[0].innerText;
   var currentCommentCountElem = $(".comments__count")[0];
+  var mutationObserverRunned = false; //kludge! See comment for 'highlighting user's comment' section further
   //track every new comments that is loaded into document by site's js
   $.initialize(".comment", function() {
     if(this.className != "form__comment comment") { //exclude the posting form
       //show number of new comments only once in first call of this anonymous function. 
       //Not possible to call this function earlier because '.comments__count' not set to actual number of comments till this point of time
       callOnceShowNewCommentsCount();
-      //at this point of time '.comments__count' is set from 0 to actual number of comments by site's js
-      //and all comments are loaded. '.comments__count' is changed if user post new comment or delete old one.
-      //next function tracks this user's actions
-      callOnceMutationObserverObserve();
-      
       //highlighting user's comment
       if($(this).attr('data-user-name') === userName) {
         $(this).find(".comment__inner").attr('style','background-color: ' + colors.userComment);
-        if(0 == oldCommentsCount) // if it is first user's visit or last time there were no comments at all
-          if($(".comment").not(".form__comment").length == 1) // and this is the first comment on this page i.e. user posted this comment now
-            localStorage.setItem(parsedUrl.key, "0:1"); // next time all others comments has to be highlighted as new.
-        return;
-      }
-      //highlighting new comments
-      var commentId = $(this).attr("data-id");
-      if(commentId > oldMaxCommentId) {
-        if(null != locStorValue)
-          $(this).find(".comment__inner").attr('style', 'background-color: ' + colors.newComment);
-        if(commentId > newMaxCommentId) {
-          newMaxCommentId = commentId;
-          localStorage.setItem(parsedUrl.key, newMaxCommentId + ":" + currentCommentCountElem.innerText);
+        //mutationObserver starts tracking '.comments__count'(to know when user is posting or removing comments) after the first comment is inserted in DOM
+        //when user posts a comment and it is the first comment in this news(blog/reports/match) mutationObserver hasn't been started yet.
+        //So next two lines of code exists to handle this situation
+        if(!mutationObserverRunned && 0 == oldCommentsCount) // this ensures that this is not old user's comment, but new and created right now
+            localStorage.setItem(parsedUrl.key, "0:1");
+      } else {
+        //highlighting new comments
+        var commentId = $(this).attr("data-id");
+        if(commentId > oldMaxCommentId) {
+          if(null != locStorValue)
+            $(this).find(".comment__inner").attr('style', 'background-color: ' + colors.newComment);
+          if(commentId > newMaxCommentId) {
+            newMaxCommentId = commentId;
+            localStorage.setItem(parsedUrl.key, newMaxCommentId + ":" + currentCommentCountElem.innerText);
+          }
         }
+        //an author of the comment is 'verified'. If this is highlighted as a new comment, it will be restyled.
+        if($(this).find('.icon-verification').length)
+          $(this).find(".comment__inner").attr('style','background-color: ' + colors.verifiedUserComment);
       }
-      //if an author of the comment is 'verified'. If this is new comment, it will be restyled.
-      if($(this).find('.icon-verification').length)
-        $(this).find(".comment__inner").attr('style','background-color: ' + colors.verifiedUserComment);
+      //to know when user posts or removes comments, mutationObserver is called to track changes in '.comments__count' element
+      //at this point of time '.comments__count' is set from 0 to actual number of comments by site's js and all comments are loaded.
+      //why mutationObserver isn't called before "$.initialize(".comment" ? mutationObserver has to be triggered only by user's action, 
+      //not when site's JS sets '.comments__count' to actual number of comments.
+      callOnceMutationObserverObserve();
+      mutationObserverRunned = true;
     }
   });
 }
@@ -113,13 +116,11 @@ function highlightUsersComents()
   $.initialize(".comment", function() {
     if(this.className != "form__comment comment") { //exclude the form for posting new comment
       //highlighting user's comment
-      if($(this).attr('data-user-name') === userName) {
+      if($(this).attr('data-user-name') === userName)
         $(this).find(".comment__inner").attr('style','background-color: ' + colors.userComment);
-        return;
-      }
-      //if an author of the comment is 'verified'
-      if($(this).find('.icon-verification').length)
-        $(this).find(".comment__inner").attr('style','background-color: ' + colors.verifiedUserComment);
+      else
+        if($(this).find('.icon-verification').length) //if an author of the comment is 'verified'
+          $(this).find(".comment__inner").attr('style','background-color: ' + colors.verifiedUserComment);
     }
   });
 }
@@ -183,6 +184,7 @@ function trackUserPostingAndDeletingComment(localStorageKey)
   var callback = function(mutationsList) {
     var removedCounter = null;
     for(var mutation of mutationsList) {
+      console.log(mutation);
       if(mutation.removedNodes.length != 0) // if 'comments__count' removed from DOM
         removedCounter = mutation.removedNodes[0].data;
       if (mutation.addedNodes.length != 0) {// if 'comments__count' added to DOM

@@ -16,7 +16,7 @@ function showNewCommentsCounterOnMainPage()
       var locStorValue = localStorage.getItem(parsedUrl.key);
       if(null != locStorValue) {
         var oldCommentsCount = parseInt(locStorValue.split(":")[1]); // id:count
-        var commentsCount = parseInt(this.children[2].innerText); // span(.comment-counter) > childs[2] > span(.comment-counter__count)
+        var commentsCount = parseInt(this.children[2].innerText); // span(.comment-counter) -> childs[2] -> span(.comment-counter__count)
         $(this).after("\n<span style='color: #6c9007'>+" + (commentsCount > oldCommentsCount ? commentsCount - oldCommentsCount : "0") + "</span>");
       }
     });
@@ -48,7 +48,7 @@ function highlightComments()
     return function() {
       if (!executed) {
         executed = true;
-        trackUserPostingAndDeletingComment(parsedUtl.key);
+        trackUserPostingAndDeletingComment(parsedUrl.key);
       }
     };
   })();
@@ -69,7 +69,7 @@ function highlightComments()
   var currentCommentCountElem = $(".comments__count")[0];
   //track every new comments that is loaded into document by site's js
   $.initialize(".comment", function() {
-    if(this.className != "form__comment comment") { //exclude the form for posting new comment
+    if(this.className != "form__comment comment") { //exclude the posting form
       //show number of new comments only once in first call of this anonymous function. 
       //Not possible to call this function earlier because '.comments__count' not set to actual number of comments till this point of time
       callOnceShowNewCommentsCount();
@@ -96,7 +96,7 @@ function highlightComments()
           localStorage.setItem(parsedUrl.key, newMaxCommentId + ":" + currentCommentCountElem.innerText);
         }
       }
-      //if an author of the comment is 'verified'
+      //if an author of the comment is 'verified'. If this is new comment, it will be restyled.
       if($(this).find('.icon-verification').length)
         $(this).find(".comment__inner").attr('style','background-color: #beeaec');
     }
@@ -112,6 +112,7 @@ function highlightUsersComents()
       //highlighting user's comment
       if($(this).attr('data-user-name') === userName) {
         $(this).find(".comment__inner").attr('style','background-color: #fff8dd');
+        return;
       }
       //if an author of the comment is 'verified'
       if($(this).find('.icon-verification').length)
@@ -126,23 +127,16 @@ function keepLocalStorageFromOverflowing()
     var data = []; // key:commentId
     for(var i = 0; i < localStorage.length; ++i) {
       var key = localStorage.key(i);
-      if(key.length > 3) { // length is enough to contain "news", "blog", "match", "reports"
+      if(key.length > 3) { // length is enough to contain "news", "blog", "match", "repo"rts
         var arr = key.split("/");
-        if(arr.length == 2 && (arr[0] === "news" || arr[0] === "match" || arr[0] === "blog" || arr[0] === "reports")) {
-          data.push({ "key": key, "value": localStorage.getItem(key).split(":")[0] }); //commentId
+        if(arr.length == 2 && (arr[0] === "news" || arr[0] === "match" || arr[0] === "blog" || arr[0] === "reports")) { // type/rest of key
+          data.push({ "key": key, "value": localStorage.getItem(key).split(":")[0] }); //save maxCommentId
         }          
       }
     }
-    //sort keys and deleted oldest by comparing commentId with each other
-    data.sort(function(a,b) { 
-      if(a.value < b.value)
-        return -1;
-      if(a.value > b.value)
-        return 1;
-      return 0;
-    });
+    data.sort(function(a,b){ return (a.value < b.value) ? -1 : (a.value > b.value) ? 1 : 0; });
     var commentsCountToDelete = 1500;
-    for(var i = 0; i < commentsCountToDelete && i < data.length; ++i)
+    for(var i = 0; i < commentsCountToDelete && i < data.length; ++i) // delete first elements. they are oldest ones.
       localStorage.removeItem(data[i].key);
   }
 }
@@ -160,16 +154,14 @@ function debug()
 function parseUrlPathname(url)
 {
   var pathnameParts = url.split("/");
-  //var parsedUrl = window.location.pathname.match(/(\w+)\/([\w-]+)/i); // hostname/*/*/
-  var page = { "type": null };
   if(pathnameParts.length < 2)
-    page = { "type": "none" };
+    return { "type": "none" };
   else
-    page = { "type": pathnameParts[1] }; // news/blog/reports/matches...
+    var page = { "type": pathnameParts[1] }; // news/blog/reports/matches...
   if("news" == page.type &&  pathnameParts.length > 2)
-    page.key = pathnameParts[1] + "/" + pathnameParts[2]; // key in localStorage
+    page.key = "news/" + pathnameParts[2]; // key in localStorage
   else if ("blog" == page.type && pathnameParts.length > 3)
-    page.key = pathnameParts[1] + "/" + pathnameParts[3];
+    page.key = "blog/" + pathnameParts[3];
   else if ("base" == page.type && pathnameParts.length > 4) {
       if("match" == pathnameParts[2]) {
         page.type = "match";
@@ -179,7 +171,7 @@ function parseUrlPathname(url)
         page.type = "none";
       }
   } else if ("reports" == page.type && pathnameParts.length > 2)
-    page.key = pathnameParts[1] + "/" + pathnameParts[2];
+    page.key = "reports/" + pathnameParts[2];
   else
     page.type = "none";
   return page;
@@ -204,7 +196,7 @@ function trackUserPostingAndDeletingComment(localStorageKey)
           var arrInfo = localStorage.getItem(localStorageKey).split(":");
           var maxCommentId  = arrInfo[0];
           var commentsCoundDiff = mutation.addedNodes[0].data - removedCounter; // has to be 1 or -1.
-          var newCommentsCount = parseInt(arrInfo[1]) + parseInt(commentsCoundDiff); //arrInfo[1] + commentsCoundDiff returns string, not int
+          var newCommentsCount = parseInt(arrInfo[1]) + parseInt(commentsCoundDiff);
           localStorage.setItem(localStorageKey, maxCommentId + ":" + newCommentsCount);
         }
       }

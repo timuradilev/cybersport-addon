@@ -41,6 +41,7 @@ function highlightComments()
   } else { // it is first time user visit the page
     var oldMaxCommentId = 0;
     var newMaxCommentId = 0;
+    var oldCommentsCount = 0;
     localStorage.setItem(parsedUrl.key, "0:0");
   }
   //function object that calls observer's observe method  once
@@ -138,8 +139,10 @@ function keepLocalStorageFromOverflowing()
     }
     data.sort(function(a,b){ return (a.value < b.value) ? -1 : (a.value > b.value) ? 1 : 0; });
     var commentsCountToDelete = 1500;
-    for(var i = 0; i < commentsCountToDelete && i < data.length; ++i) // delete first elements. they are oldest ones.
+    for(var i = 0; i < commentsCountToDelete && i < data.length; ++i) {// delete first elements. they are oldest ones.
+      console.log(data[i].value);
       localStorage.removeItem(data[i].key);
+    }
   }
 }
 //get type of page and key to set in localStorage or get from localStorage

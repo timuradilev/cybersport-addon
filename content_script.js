@@ -142,16 +142,6 @@ function keepLocalStorageFromOverflowing()
       localStorage.removeItem(data[i].key);
   }
 }
-function debug()
-{
-  var maxId = 0;
-  var comments = $(".comment").not(".form__comment");
-  comments.each(function() {
-    if($(this).attr("data-id") > maxId)
-      maxId = $(this).attr("data-id");
-  });
-  console.log("maxId = " + maxId);
-}
 //get type of page and key to set in localStorage or get from localStorage
 function parseUrlPathname(url)
 {

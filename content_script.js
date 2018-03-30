@@ -30,6 +30,7 @@ function highlightComments()
     highlightUsersComents();
     return;
   }
+  var colors = getColors();
   //get data from localStorage about last visit
   var locStorValue = localStorage.getItem(parsedUrl.key);
   if(null != locStorValue) { // if user has already visited this page
@@ -80,7 +81,7 @@ function highlightComments()
       
       //highlighting user's comment
       if($(this).attr('data-user-name') === userName) {
-        $(this).find(".comment__inner").attr('style','background-color: #fff8dd');
+        $(this).find(".comment__inner").attr('style','background-color: ' + colors.userComment);
         if(0 == oldCommentsCount) // if it is first user's visit or last time there were no comments at all
           if($(".comment").not(".form__comment").length == 1) // and this is the first comment on this page i.e. user posted this comment now
             localStorage.setItem(parsedUrl.key, "0:1"); // next time all others comments has to be highlighted as new.
@@ -90,7 +91,7 @@ function highlightComments()
       var commentId = $(this).attr("data-id");
       if(commentId > oldMaxCommentId) {
         if(null != locStorValue)
-          $(this).find(".comment__inner").attr('style', 'background-color: rgb(222,222,222)');
+          $(this).find(".comment__inner").attr('style', 'background-color: ' + colors.newComment);
         if(commentId > newMaxCommentId) {
           newMaxCommentId = commentId;
           localStorage.setItem(parsedUrl.key, newMaxCommentId + ":" + currentCommentCountElem.innerText);
@@ -98,12 +99,13 @@ function highlightComments()
       }
       //if an author of the comment is 'verified'. If this is new comment, it will be restyled.
       if($(this).find('.icon-verification').length)
-        $(this).find(".comment__inner").attr('style','background-color: #beeaec');
+        $(this).find(".comment__inner").attr('style','background-color: ' + colors.verifiedUserComment);
     }
   });
 }
 function highlightUsersComents()
 {
+  var colors = getColors();
   //get user's name
   var userName = document.getElementsByClassName("header__login")[0].children[3].children[0].children[0].innerText;
   //track every new comments that is loaded into document by site's js
@@ -111,12 +113,12 @@ function highlightUsersComents()
     if(this.className != "form__comment comment") { //exclude the form for posting new comment
       //highlighting user's comment
       if($(this).attr('data-user-name') === userName) {
-        $(this).find(".comment__inner").attr('style','background-color: #fff8dd');
+        $(this).find(".comment__inner").attr('style','background-color: ' + colors.userComment);
         return;
       }
       //if an author of the comment is 'verified'
       if($(this).find('.icon-verification').length)
-        $(this).find(".comment__inner").attr('style','background-color: #beeaec');
+        $(this).find(".comment__inner").attr('style','background-color: ' + colors.verifiedUserComment);
     }
   });
 }
@@ -205,4 +207,40 @@ function trackUserPostingAndDeletingComment(localStorageKey)
   var observer = new MutationObserver(callback);
   var targetNode = document.getElementsByClassName('comments__count').item(0);
   observer.observe(targetNode, config);
+}
+//depenging on the 'color-mode' cookie choose colors. 'color-mode' can be 'mode-night' or 'mode-day'
+function getColors()
+{
+  var dayNightMode = getCookie("color-mode");
+  var colors = {};
+  switch (dayNightMode) {
+    default:
+    case "mode-day":
+      colors.userComment = "#fff8dd";
+      colors.newComment = "#dedede";
+      colors.verifiedUserComment = "#beeaec";
+      break;
+    case "mode-night":
+      colors.userComment = "#423814";
+      colors.newComment = "#154824";
+      colors.verifiedUserComment = "#07494c";
+      break;
+  }
+  return colors;
+}
+//source https://www.w3schools.com/js/js_cookies.asp
+function getCookie(cname) {
+    var name = cname + "=";
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(';');
+    for(var i = 0; i <ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
 }

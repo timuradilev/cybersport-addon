@@ -4,9 +4,6 @@
 	"name": "Cybersport Enhancement Suite",
 	"description": "The Addon highlights new, user's, and virified user comments",
 	"version": "1.0",
-	"background": {
-		"scripts": ["background.js"]
-	},
 	"permissions": ["*://*.cybersport.ru/*"],
   "content_scripts": [
     {

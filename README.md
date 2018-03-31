@@ -1,3 +1,2 @@
 # cybersport-addon
-Addon for Opera
-Highlights a user's comments on cybersport.ru web-site.
+Highlights a user's comments, new comments and verified user comments on cybersport.ru web-site.

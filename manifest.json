@@ -1,9 +1,10 @@
 {
 	"manifest_version": 2,
 
-	"name": "Cybersport Enhancement Suite",
-	"description": "The Addon highlights new, user's, and virified user comments",
-	"version": "1.0",
+	"name": "__MSG_extensionName__",
+	"description": "__MSG_extensionDescription__",
+  "default_locale": "en",
+	"version": "1.0.1",
 	"permissions": ["*://*.cybersport.ru/*"],
   "content_scripts": [
     {

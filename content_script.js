@@ -66,7 +66,7 @@ function highlightComments()
       }
     };
   })();
-  var userName = document.getElementsByClassName("header__login")[0].children[3].children[0].children[0].innerText;
+  var userName = getUserName();
   var currentCommentCountElem = $(".comments__count")[0];
   var mutationObserverRunned = false; //kludge! See comment for 'highlighting user's comment' section further
   //track every new comments that is loaded into document by site's js
@@ -111,7 +111,7 @@ function highlightUsersComents()
 {
   var colors = getColors();
   //get user's name
-  var userName = document.getElementsByClassName("header__login")[0].children[3].children[0].children[0].innerText;
+  var userName = getUserName();
   //track every new comments that is loaded into document by site's js
   $.initialize(".comment", function() {
     if(this.className != "form__comment comment") { //exclude the form for posting new comment
@@ -237,5 +237,13 @@ function getCookie(cname) {
             return c.substring(name.length, c.length);
         }
     }
+    return "";
+}
+function getUserName()
+{
+  var userName = document.getElementsByClassName("header__login");
+  if(userName.length)
+    return userName[0].children[3].children[0].children[0].innerText;
+  else
     return "";
 }

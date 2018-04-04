@@ -3,7 +3,7 @@
 
 	"name": "__MSG_extensionName__",
 	"description": "__MSG_extensionDescription__",
-  "default_locale": "en",
+  "default_locale": "ru",
 	"version": "1.0.0",
 	"permissions": ["*://*.cybersport.ru/*"],
   "content_scripts": [

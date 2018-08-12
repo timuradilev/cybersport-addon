@@ -3,7 +3,7 @@ init();
 function init()
 {
   keepLocalStorageFromOverflowing();
-  if(window.location.pathname == "/") //if it is main page
+  if(window.location.pathname == "/")
     showNewCommentsCounterOnMainPage();
   else
     highlightComments();
@@ -24,27 +24,24 @@ function showNewCommentsCounterOnMainPage()
 }
 function highlightComments()
 {
-  //parse pathname to find page's type and key for localStorage
   var parsedUrl = parseUrlPathname(window.location.pathname);
   if("none" == parsedUrl.type) {
     highlightUsersComents();
     return;
   }
   var colors = getColors();
-  //get data from localStorage about last visit
   var locStorValue = localStorage.getItem(parsedUrl.key);
-  if(null != locStorValue) { // if user has already visited this page
+  if(null != locStorValue) {
     var arr = locStorValue.split(":"); // id:count
     var oldMaxCommentId = arr[0];
     var oldCommentsCount = arr[1];
     var newMaxCommentId = oldMaxCommentId;
-  } else { // it is first time user visit the page
+  } else {
     var oldMaxCommentId = 0;
     var newMaxCommentId = 0;
     var oldCommentsCount = 0;
     localStorage.setItem(parsedUrl.key, "0:0");
   }
-  //function object that calls observer's observe method  once
   var callOnceMutationObserverObserve = (function() {
     var executed = false;
     return function() {
@@ -54,9 +51,8 @@ function highlightComments()
       }
     };
   })();
-  //function object that calls showNewCommentsCount function 0-1 times
   var callOnceShowNewCommentsCount = (function() {
-    var executed = locStorValue == null; //if it is first visit to this page, set true and never execute!
+    var executed = locStorValue == null;
     var commentsCount = locStorValue != null ? oldCommentsCount : null;
     return function() {
       if (!executed) {
@@ -72,10 +68,8 @@ function highlightComments()
   //track every new comments that is loaded into document by site's js
   $.initialize(".comment", function() {
     if(this.className != "form__comment comment") { //exclude the posting form
-      //show number of new comments only once in first call of this anonymous function. 
       //Not possible to call this function earlier because '.comments__count' not set to actual number of comments till this point of time
       callOnceShowNewCommentsCount();
-      //highlighting user's comment
       if($(this).attr('data-user-name') === userName) {
         $(this).find(".comment__inner").attr('style','background-color: ' + colors.userComment);
         //mutationObserver starts tracking '.comments__count'(to know when user is posting or removing comments) after the first comment is inserted in DOM
@@ -84,7 +78,6 @@ function highlightComments()
         if(!mutationObserverRunned && 0 == oldCommentsCount) // this ensures that this is not old user's comment, but new and created right now
             localStorage.setItem(parsedUrl.key, "0:1");
       } else {
-        //highlighting new comments
         var commentId = $(this).attr("data-id");
         if(commentId > oldMaxCommentId) {
           if(null != locStorValue)
@@ -110,16 +103,13 @@ function highlightComments()
 function highlightUsersComents()
 {
   var colors = getColors();
-  //get user's name
   var userName = getUserName();
-  //track every new comments that is loaded into document by site's js
   $.initialize(".comment", function() {
-    if(this.className != "form__comment comment") { //exclude the form for posting new comment
-      //highlighting user's comment
+    if(this.className != "form__comment comment") {
       if($(this).attr('data-user-name') === userName)
         $(this).find(".comment__inner").attr('style','background-color: ' + colors.userComment);
       else
-        if($(this).find('.icon-verification').length) //if an author of the comment is 'verified'
+        if($(this).find('.icon-verification').length)
           $(this).find(".comment__inner").attr('style','background-color: ' + colors.verifiedUserComment);
     }
   });
@@ -127,7 +117,6 @@ function highlightUsersComents()
 function keepLocalStorageFromOverflowing()
 {
   if(localStorage.length > 3000) {
-    //get all our key:value from localStorage
     var data = []; // key:commentId
     for(var i = 0; i < localStorage.length; ++i) {
       var key = localStorage.key(i);
@@ -146,7 +135,10 @@ function keepLocalStorageFromOverflowing()
     }
   }
 }
-//get type of page and key to set in localStorage or get from localStorage
+
+/**
+ * get type of page and key to set in localStorage or get from localStorage
+ */
 function parseUrlPathname(url)
 {
   var pathnameParts = url.split("/");
@@ -203,7 +195,7 @@ function trackUserPostingAndDeletingComment(localStorageKey)
   var targetNode = document.getElementsByClassName('comments__count').item(0);
   observer.observe(targetNode, config);
 }
-//depenging on the 'color-mode' cookie choose colors. 'color-mode' can be 'mode-night' or 'mode-day'
+
 function getColors()
 {
   var dayNightMode = getCookie("color-mode");
@@ -223,7 +215,10 @@ function getColors()
   }
   return colors;
 }
-//source https://www.w3schools.com/js/js_cookies.asp
+
+/**
+ * source https://www.w3schools.com/js/js_cookies.asp
+ */
 function getCookie(cname) {
     var name = cname + "=";
     var decodedCookie = decodeURIComponent(document.cookie);
